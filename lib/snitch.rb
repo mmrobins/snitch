@@ -35,11 +35,10 @@ class Snitch
     client_list.clear
     begin
       # Open SNMP connection
-      SNMP::Manager.open(host: config['router_name']) do |manager|
-        # Walk the SNMP Table for Net Addresses, see RFC 1213-MIB
-        manager.walk("ipNetToMediaPhysAddress") do |row|
-          # Convert OCTET String into MAC Address
-          client_list << row.value.to_mac
+      SNMP::Manager.open(host: config['router_name'], community: 'private') do |manager|
+        list = manager.get_bulk(0, 10, '1.3.6.1.4.1.4526.100.7.8.8.1.1.1.24')
+        list.varbind_list.map do |row|
+          client_list << row.value.to_mac if row.value.is_a? SNMP::OctetString
         end
       end
     rescue SocketError => error
